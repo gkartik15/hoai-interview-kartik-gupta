@@ -5,6 +5,7 @@ import {
   blob,
   foreignKey,
   primaryKey,
+  real,
 } from 'drizzle-orm/sqlite-core';
 import type { InferSelectModel } from 'drizzle-orm';
 
@@ -99,3 +100,52 @@ export const suggestion = sqliteTable(
 );
 
 export type Suggestion = InferSelectModel<typeof suggestion>;
+
+export const invoice = sqliteTable(
+  'Invoice',
+  {
+    id: text('id').notNull(),
+    chatId: text('chatId').notNull(),
+    messageId: text('messageId').notNull(),
+    customerName: text('customerName'),
+    vendorName: text('vendorName'),
+    invoiceNumber: text('invoiceNumber'),
+    invoiceDate: text('invoiceDate'),
+    dueDate: text('dueDate'),
+    amount: real('amount'),
+    createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.id] }),
+    chatRef: foreignKey(() => ({
+      columns: [table.chatId],
+      foreignColumns: [chat.id],
+    })),
+    messageRef: foreignKey(() => ({
+      columns: [table.messageId],
+      foreignColumns: [message.id],
+    })),
+  }),
+);
+export type Invoice = InferSelectModel<typeof invoice>;
+
+export const invoiceLineItem = sqliteTable(
+  'InvoiceLineItem',
+  {
+    id: text('id').notNull(),
+    invoiceId: text('invoiceId').notNull(),
+    description: text('description'),
+    quantity: real('quantity'),
+    unitPrice: real('unitPrice'),
+    total: real('total'),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.id] }),
+    invoiceRef: foreignKey(() => ({
+      columns: [table.invoiceId],
+      foreignColumns: [invoice.id],
+    })),
+  }),
+);
+
+export type InvoiceLineItem = InferSelectModel<typeof invoiceLineItem>;

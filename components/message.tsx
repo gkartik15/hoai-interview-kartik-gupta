@@ -29,6 +29,7 @@ const PurePreviewMessage = ({
   setMessages,
   reload,
   isReadonly,
+  onViewAllInvoices,
 }: {
   chatId: string;
   message: Message;
@@ -41,7 +42,10 @@ const PurePreviewMessage = ({
     chatRequestOptions?: ChatRequestOptions,
   ) => Promise<string | null | undefined>;
   isReadonly: boolean;
+  onViewAllInvoices: () => void;
 }) => {
+  const isConfirmation = message.content === '✅ Invoice processed successfully.';
+
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
   return (
@@ -130,6 +134,15 @@ const PurePreviewMessage = ({
                   reload={reload}
                 />
               </div>
+            )}
+
+            {isConfirmation && onViewAllInvoices && (
+              <button
+              onClick={onViewAllInvoices}
+              className="px-3 py-2 rounded-xl w-fit block mt-2 border border-primary text-primary"
+            >
+                View All Invoices
+              </button>
             )}
 
             {message.toolInvocations && message.toolInvocations.length > 0 && (

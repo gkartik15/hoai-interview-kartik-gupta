@@ -11,6 +11,8 @@ import {
   type Message,
   message,
   vote,
+  invoice,
+  invoiceLineItem,
 } from './schema';
 import type { BlockKind } from '@/components/block';
 
@@ -320,3 +322,110 @@ export async function updateChatVisiblityById({
     throw error;
   }
 }
+
+export async function saveInvoice({
+  chatId,
+  messageId,
+  parsedResponse
+}: {
+  chatId: string;
+  messageId: string;
+  parsedResponse: any;
+}) {
+  const invoiceId = crypto.randomUUID();
+  await db.insert(invoice).values({
+    id: invoiceId,
+    chatId: chatId,
+    messageId: messageId,
+    customerName: parsedResponse.data.customerName,
+    vendorName: parsedResponse.data.vendorName,
+    invoiceNumber: parsedResponse.data.invoiceNumber,
+    invoiceDate: parsedResponse.data.invoiceDate,
+    dueDate: parsedResponse.data.dueDate,
+    amount: parsedResponse.data.amount,
+    createdAt: new Date(),
+  });
+
+  if (Array.isArray(parsedResponse.data.lineItems)) {
+    for (const item of parsedResponse.data.lineItems) {
+      await db.insert(invoiceLineItem).values({
+        id: crypto.randomUUID(),
+        invoiceId,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        total: item.total,
+      });
+    }
+  }
+  return invoiceId;
+}
+
+export async function getInvoices() {
+  try {
+    const invoices = await db.select().from(invoice);
+    const invoiceIds = invoices.map(inv => inv.id);
+    const lineItems = await db.select().from(invoiceLineItem).where(inArray(invoiceLineItem.invoiceId, invoiceIds))
+    return invoices.map(inv => ({
+      ...inv,
+      lineItems: lineItems.filter(item => item.invoiceId === inv.id),
+    }));
+  } catch (error) {
+    console.error('Failed to get invoices from database');
+    throw error;
+  }
+}
+
+export async function getInvoiceById({ id }: { id: string }) {
+  try {
+    return await db.select().from(invoice).where(eq(invoice.id, id));
+  } catch (error) {
+    console.error('Failed to get invoice by id from database');
+    throw error;
+  }
+} 
+
+export async function getInvoiceLineItemsByInvoiceId({ id }: { id: string }) {
+  try {
+    return await db.select().from(invoiceLineItem).where(eq(invoiceLineItem.invoiceId, id));
+  } catch (error) {
+    console.error('Failed to get invoice line items by invoice id from database');
+    throw error;
+  }
+} 
+
+export async function getInvoiceLineItems() {
+  try {
+    return await db.select().from(invoiceLineItem);
+  } catch (error) {
+    console.error('Failed to get invoice line items from database');  
+    throw error;
+  }
+}     
+
+export async function deleteInvoiceLineItemById({ id }: { id: string }) {
+  try {
+    return await db.delete(invoiceLineItem).where(eq(invoiceLineItem.id, id));
+  } catch (error) {
+    console.error('Failed to delete invoice line item by id from database');
+    throw error;
+  }
+}   
+
+export async function deleteInvoiceLineItemsByInvoiceId({ invoiceId }: { invoiceId: string }) {
+  try {
+    return await db.delete(invoiceLineItem).where(eq(invoiceLineItem.invoiceId, invoiceId));
+  } catch (error) {
+    console.error('Failed to delete invoice line items by invoice id from database'); 
+    throw error;
+  }
+}   
+
+export async function deleteInvoiceById({ id }: { id: string }) {
+  try {
+    return await db.delete(invoice).where(eq(invoice.id, id));
+  } catch (error) {
+    console.error('Failed to delete invoice by id from database');
+    throw error;
+  }
+}       

@@ -39,3 +39,7 @@ yarn-error.log*
 
 .idea
 sqlite.db
+
+pnpm-workspace.yaml
+
+clear-data.ts

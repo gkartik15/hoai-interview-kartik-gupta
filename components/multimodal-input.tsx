@@ -119,11 +119,9 @@ function PureMultimodalInput({
 
   const submitForm = useCallback(() => {
     window.history.replaceState({}, '', `/chat/${chatId}`);
-
     handleSubmit(undefined, {
       experimental_attachments: attachments,
     });
-
     setAttachments([]);
     setLocalStorageInput('');
     resetHeight();
@@ -143,6 +141,7 @@ function PureMultimodalInput({
   const uploadFile = async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('chatId', chatId);
 
     try {
       const response = await fetch('/api/files/upload', {
@@ -150,26 +149,47 @@ function PureMultimodalInput({
         body: formData,
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
-        const { url, pathname, contentType } = data;
+        const { id, url } = data;
 
         return {
+          id,
           url,
-          name: pathname,
-          contentType: contentType,
+          name: file.name,
+          contentType: file.type,
         };
       }
-      const { error } = await response.json();
-      toast.error(error);
+      return undefined;
     } catch (error) {
-      toast.error('Failed to upload file, please try again!');
+      console.error('Upload error:', error);
+      return undefined;
     }
   };
+
+  const ALLOWED_FILE_TYPES = ['application/pdf', 'image/png', 'image/jpeg'];
 
   const handleFileChange = useCallback(
     async (event: ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(event.target.files || []);
+
+      // Validate each file before proceeding
+      const invalidFiles = files.filter(file => {
+        if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+          toast.error(`File type ${file.type} is not supported. Only PDF, PNG and JPEG files are allowed.`);
+          return true;
+        }
+        return false;
+      });
+
+      if (invalidFiles.length > 0) {
+        // Clear the file input so user can retry
+        if (event.target instanceof HTMLInputElement) {
+          event.target.value = '';
+        }
+        return;
+      }
 
       setUploadQueue(files.map((file) => file.name));
 
@@ -206,68 +226,86 @@ function PureMultimodalInput({
         className="fixed -top-4 -left-4 size-0.5 opacity-0 pointer-events-none"
         ref={fileInputRef}
         multiple
+        accept={ALLOWED_FILE_TYPES.join(',')}
         onChange={handleFileChange}
         tabIndex={-1}
       />
 
-      {(attachments.length > 0 || uploadQueue.length > 0) && (
-        <div className="flex flex-row gap-2 overflow-x-scroll items-end">
-          {attachments.map((attachment) => (
-            <PreviewAttachment key={attachment.url} attachment={attachment} />
-          ))}
-
-          {uploadQueue.map((filename) => (
-            <PreviewAttachment
-              key={filename}
-              attachment={{
-                url: '',
-                name: filename,
-                contentType: '',
-              }}
-              isUploading={true}
-            />
-          ))}
-        </div>
-      )}
-
-      <Textarea
-        ref={textareaRef}
-        placeholder="Send a message..."
-        value={input}
-        onChange={handleInput}
+      <div
         className={cx(
-          'min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted pb-10 dark:border-zinc-700',
+          'min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base bg-muted relative border dark:border-zinc-700 border-zinc-200',
           className,
         )}
-        rows={2}
-        autoFocus
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
+      >
+        {(attachments.length > 0 || uploadQueue.length > 0) && (
+          <div className="flex flex-row gap-2 overflow-x-auto items-end p-4 pb-0">
+            {attachments.map((attachment) => (
+              <PreviewAttachment
+                key={attachment.url}
+                attachment={attachment}
+                onRemove={() => {
+                  setAttachments((currentAttachments) =>
+                    currentAttachments.filter(
+                      (a) => a.url !== attachment.url,
+                    ),
+                  );
+                }}
+              />
+            ))}
+            {uploadQueue.map((filename) => (
+              <PreviewAttachment
+                key={filename}
+                attachment={{
+                  url: '',
+                  name: filename,
+                  contentType: '',
+                }}
+                isUploading={true}
+              />
+            ))}
+          </div>
+        )}
 
-            if (isLoading) {
-              toast.error('Please wait for the model to finish its response!');
-            } else {
-              submitForm();
+        <Textarea
+          ref={textareaRef}
+          placeholder="Send a message..."
+          value={input}
+          onChange={handleInput}
+          className={cx(
+            'min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none !text-base bg-transparent pb-10',
+            'border-0 focus-visible:ring-0 focus:ring-0 ring-0 shadow-none focus-visible:ring-offset-0',
+            'px-4 py-6'
+          )}
+          rows={2}
+          autoFocus
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+
+              if (isLoading) {
+                toast.error('Please wait for the model to finish its response!');
+              } else {
+                submitForm();
+              }
             }
-          }
-        }}
-      />
+          }}
+        />
 
-      <div className="absolute bottom-0 p-2 w-fit flex flex-row justify-start">
-        <AttachmentsButton fileInputRef={fileInputRef} isLoading={isLoading} />
-      </div>
+        <div className="absolute bottom-0 p-2 w-fit flex flex-row justify-start">
+          <AttachmentsButton fileInputRef={fileInputRef} isLoading={isLoading} />
+        </div>
 
-      <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
-        {isLoading ? (
-          <StopButton stop={stop} setMessages={setMessages} />
-        ) : (
-          <SendButton
+        <div className="absolute bottom-0 right-0 p-2 w-fit flex flex-row justify-end">
+          {isLoading ? (
+            <StopButton stop={stop} setMessages={setMessages} />
+            ) : (
+            <SendButton
             input={input}
             submitForm={submitForm}
             uploadQueue={uploadQueue}
-          />
-        )}
+            />
+          )}
+        </div>
       </div>
     </div>
   );
