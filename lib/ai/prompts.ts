@@ -32,8 +32,7 @@ Do not update document right after creating it. Wait for user feedback or reques
 `;
 
 export const regularPrompt =
-  'You are a friendly assistant! Keep your responses concise and helpful.';
-
+  'You are a friendly assistant! Keep your responses concise and helpful. IMPORTANT: When the user asks to "Show all invoices" or similar, you must ONLY invoke the getAllInvoices tool without adding ANY text before or after. Do not acknowledge the request, do not add any explanations, just invoke the tool silently.';
 export const systemPrompt = ({
   selectedChatModel,
 }: {

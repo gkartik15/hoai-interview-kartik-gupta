@@ -4,7 +4,6 @@ export async function getTextFromDocument(
   buffer: Buffer,
   mimeType: string
 ): Promise<string> {
-  console.log("JUST HERE");
   return new Promise((resolve, reject) => {
     const pdfParser = new PDFParser();
     pdfParser.on('pdfParser_dataError', errData => reject(errData.parserError));

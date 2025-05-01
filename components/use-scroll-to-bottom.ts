@@ -12,8 +12,26 @@ export function useScrollToBottom<T extends HTMLElement>(): [
     const end = endRef.current;
 
     if (container && end) {
-      const observer = new MutationObserver(() => {
-        end.scrollIntoView({ behavior: 'instant', block: 'end' });
+      setTimeout(() => {
+        end.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      }, 100);
+      const observer = new MutationObserver((mutations) => {
+        // Only scroll if new messages are added
+        const hasNewMessage = mutations.some(mutation => {
+          return Array.from(mutation.addedNodes).some(node => {
+            const element = node as HTMLElement;
+            return element.hasAttribute && (
+              element.hasAttribute('data-role') || // New message
+              element.classList?.contains('thinking-message') // Loading message
+            );
+          });
+        });
+        // Force scroll to bottom with a slight delay to ensure content is rendered
+        if (hasNewMessage) {
+          setTimeout(() => {
+            end.scrollIntoView({ behavior: 'smooth', block: 'end' });
+          }, 100);
+        }
       });
 
       observer.observe(container, {

@@ -20,6 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 import { MessageEditor } from './message-editor';
 import { DocumentPreview } from './document-preview';
 import { MessageReasoning } from './message-reasoning';
+import { AllInvoicesTable } from './all-invoice-table';
 
 const PurePreviewMessage = ({
   chatId,
@@ -28,8 +29,7 @@ const PurePreviewMessage = ({
   isLoading,
   setMessages,
   reload,
-  isReadonly,
-  onViewAllInvoices,
+  isReadonly
 }: {
   chatId: string;
   message: Message;
@@ -42,9 +42,7 @@ const PurePreviewMessage = ({
     chatRequestOptions?: ChatRequestOptions,
   ) => Promise<string | null | undefined>;
   isReadonly: boolean;
-  onViewAllInvoices: () => void;
 }) => {
-  const isConfirmation = message.content === '✅ Invoice processed successfully.';
 
   const [mode, setMode] = useState<'view' | 'edit'>('view');
 
@@ -136,15 +134,6 @@ const PurePreviewMessage = ({
               </div>
             )}
 
-            {isConfirmation && onViewAllInvoices && (
-              <button
-              onClick={onViewAllInvoices}
-              className="px-3 py-2 rounded-xl w-fit block mt-2 border border-primary text-primary"
-            >
-                View All Invoices
-              </button>
-            )}
-
             {message.toolInvocations && message.toolInvocations.length > 0 && (
               <div className="flex flex-col gap-4">
                 {message.toolInvocations.map((toolInvocation) => {
@@ -157,6 +146,8 @@ const PurePreviewMessage = ({
                       <div key={toolCallId}>
                         {toolName === 'getWeather' ? (
                           <Weather weatherAtLocation={result} />
+                        ): toolName === 'getAllInvoices' ? (
+                          <AllInvoicesTable invoices={result} />
                         ) : toolName === 'createDocument' ? (
                           <DocumentPreview
                             isReadonly={isReadonly}
