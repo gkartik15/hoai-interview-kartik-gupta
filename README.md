@@ -3,6 +3,10 @@
 **Intelligent Invoice Processing**
   - AI-powered invoice data extraction
   - Automatic validation of invoice fields (dates, amounts, line items)
+  - Duplicate invoice detection and prevention based on:
+    - Vendor name
+    - Invoice number
+    - Total amount
   - Error detection for invalid or incomplete invoices
   - Database storage for processed invoices
   - Support for various invoice formats and layouts
@@ -17,7 +21,6 @@
   - Multi-column sorting (Invoice Date, Amount, Vendor Name)
   - Detailed line item view for each invoice
   - Dark mode support with consistent styling
-  - Optimized scroll behavior for better user experience
 
 ## Technology
 
@@ -59,7 +62,9 @@ Your app template should now be running on [localhost:3000](http://localhost:300
    Process this invoice: [paste invoice text or upload file]
    ```
    - The AI will extract and validate invoice data
+   - Checks for duplicate invoices automatically
    - For valid invoices: Shows extracted data and confirms storage
+   - For duplicates: Shows matching criteria and existing invoice details
    - For invalid invoices: Highlights issues and suggests corrections
 
 2. View processed invoices:
@@ -73,19 +78,35 @@ Your app template should now be running on [localhost:3000](http://localhost:300
 3. Validation feedback examples:
    - Valid invoice:
      ```
-     ✓ Invoice processed successfully
-     ✓ All required fields present
-     ✓ Line items total matches invoice amount
-     ✓ Dates are valid and properly formatted
-     ✓ Stored in database with ID: [invoice_id]
+     ✅ Invoice Processed Successfully
+     
+     Invoice Details:
+     • Vendor: [vendor_name]
+     • Invoice Number: [invoice_number]
+     • Amount: $[amount]
+     • Date: [date]
+     • Line Items: [details...]
+     
+     Invoice ID: [id]
+     ```
+   - Duplicate Invoice:
+     ```
+     ⚠️ Duplicate Invoice Detected
+     
+     This invoice matches an existing entry:
+     • Vendor: [vendor_name]
+     • Invoice #: [invoice_number]
+     • Amount: $[amount]
+     
+     Previously processed on [date]
+     Invoice ID: [id]
      ```
    - Invalid invoice:
      ```
-     ⚠ Invoice validation failed
-     × Missing required field: invoice number
-     × Line items total (1,200.00) doesn't match invoice amount (1,000.00)
-     × Invalid date format: "2024/13/45"
-     Please correct these issues and try again
+     ❌ Invalid Invoice
+     [reason for invalidity]
+     
+     Please provide a valid invoice document.
      ```
 
 ### Invoice Table Features

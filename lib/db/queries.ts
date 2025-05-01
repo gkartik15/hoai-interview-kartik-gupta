@@ -429,3 +429,30 @@ export async function deleteInvoiceById({ id }: { id: string }) {
     throw error;
   }
 }       
+
+export async function findDuplicateInvoice({
+  vendorName,
+  invoiceNumber,
+  amount
+}: {
+  vendorName: string;
+  invoiceNumber: string;
+  amount: number;
+}) {
+  try {
+    const duplicates = await db
+      .select()
+      .from(invoice)
+      .where(
+        and(
+          eq(invoice.vendorName, vendorName),
+          eq(invoice.invoiceNumber, invoiceNumber),
+          eq(invoice.amount, amount)
+        )
+      );
+    return duplicates.length > 0 ? duplicates[0] : null;
+  } catch (error) {
+    console.error('Failed to check for duplicate invoice');
+    throw error;
+  }
+}
