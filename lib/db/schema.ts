@@ -149,3 +149,25 @@ export const invoiceLineItem = sqliteTable(
 );
 
 export type InvoiceLineItem = InferSelectModel<typeof invoiceLineItem>;
+
+export const tokenUsage = sqliteTable(
+  'TokenUsage',
+  {
+    id: text('id').notNull(),
+    invoiceId: text('invoiceId').notNull(),
+    inputTokens: integer('inputTokens').notNull(),
+    outputTokens: integer('outputTokens').notNull(),
+    totalTokens: integer('totalTokens').notNull(),
+    estimatedCost: real('estimatedCost').notNull(),
+    createdAt: integer('createdAt', { mode: 'timestamp' }).notNull(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.id] }),
+    invoiceRef: foreignKey(() => ({
+      columns: [table.invoiceId],
+      foreignColumns: [invoice.id],
+    })),
+  }),
+);
+
+export type TokenUsage = InferSelectModel<typeof tokenUsage>;

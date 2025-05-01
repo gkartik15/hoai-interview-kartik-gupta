@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, asc, desc, eq, gt, gte, inArray } from 'drizzle-orm';
+import { and, asc, avg, count, desc, eq, gt, gte, inArray } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 
@@ -13,6 +13,8 @@ import {
   vote,
   invoice,
   invoiceLineItem,
+  tokenUsage,
+  TokenUsage,
 } from './schema';
 import type { BlockKind } from '@/components/block';
 
@@ -453,6 +455,53 @@ export async function findDuplicateInvoice({
     return duplicates.length > 0 ? duplicates[0] : null;
   } catch (error) {
     console.error('Failed to check for duplicate invoice');
+    throw error;
+  }
+}
+
+export async function saveTokenUsage({
+  invoiceId,
+  usage
+}: {
+  invoiceId: string;
+  usage: {
+    inputTokens: number,
+    outputTokens: number,
+    totalTokens: number,
+    estimatedCost: number
+  }
+}) {
+  try {
+    await db.insert(tokenUsage).values({
+      id: crypto.randomUUID(),
+      invoiceId: invoiceId,
+      inputTokens: usage.inputTokens,
+      outputTokens: usage.outputTokens,
+      totalTokens: usage.totalTokens,
+      estimatedCost: usage.estimatedCost,
+      createdAt: new Date()
+    });
+  } catch (error) {
+    console.error('Failed to save token usage:', error);
+    throw error;
+  }
+}
+
+export async function getAverageTokenUsage() {
+  try {
+    const result = await db
+      .select({
+        avgInputTokens: avg(tokenUsage.inputTokens),
+        avgOutputTokens: avg(tokenUsage.outputTokens),
+        avgTotalTokens: avg(tokenUsage.totalTokens),
+        avgCost: avg(tokenUsage.estimatedCost),
+        totalInvoices: count(tokenUsage.id)
+      })
+      .from(tokenUsage);
+
+    return result[0];
+  } catch (error) {
+    console.error('Failed to get average token usage:', error);
     throw error;
   }
 }
